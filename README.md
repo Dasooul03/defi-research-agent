@@ -1,6 +1,6 @@
 # DeFi Research Agent
 
-AI-driven DeFi 投研分析系统（MVP+ 迭代版）。
+AI-driven DeFi 投研分析系统
 
 ## 当前实现能力
 - FastAPI 服务 + 多 Agent 编排（Data/Research/Report）
