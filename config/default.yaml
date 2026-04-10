@@ -1,0 +1,17 @@
+app:
+  name: DeFi Research Agent
+  version: 0.1.0
+  env: dev
+llm:
+  model: gpt-4o-mini
+  temperature: 0.2
+rag:
+  top_k: 3
+  max_context_chars: 2000
+  backend: simple
+  collection_name: defi_research_docs
+  persist_directory: .chroma
+tools:
+  use_mock_data: true
+  coingecko_base_url: https://api.coingecko.com/api/v3
+  defillama_base_url: https://api.llama.fi
