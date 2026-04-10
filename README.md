@@ -104,3 +104,15 @@ pip install chromadb
 ## 真实数据源开关
 - `tools.use_mock_data: true`：始终使用 mock
 - `tools.use_mock_data: false`：优先调用 CoinGecko/DefiLlama，失败自动回退 mock
+
+## CI 与 Release
+- CI 工作流：`.github/workflows/ci.yml`
+  - 触发：push / pull_request 到 `main`
+  - 内容：后端 `pytest -q` + 前端 `npm run build`
+
+- Release 工作流：`.github/workflows/release.yml`
+  - 触发：GitHub Actions 手动 `workflow_dispatch`
+  - 输入：版本号（如 `v0.2.0`）
+  - 内容：执行后端测试、前端构建、创建并推送 tag、生成 GitHub Release
+
+- 版本说明：`CHANGELOG.md`
