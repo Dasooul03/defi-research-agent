@@ -127,3 +127,6 @@ pip install chromadb
   - 内容：执行后端测试、前端构建、创建并推送 tag、生成 GitHub Release
 
 - 版本说明：`CHANGELOG.md`
+
+## License
+This project is licensed under the MIT License. See `LICENSE` for details.
