@@ -88,6 +88,17 @@ defi-research-agent/
 - `POST /analyze`
 - `POST /report`
 
+## 更真实的工程细节
+- 请求可观测性：自动注入 `X-Request-Id`、`X-Process-Time-Ms`
+- 统一错误响应：`VALIDATION_ERROR` / `INTERNAL_ERROR`
+- 基础限流：按客户端 IP 的每分钟请求上限
+- 健康检查增强：返回版本、环境、运行时长、依赖配置状态
+
+可通过 `.env` 配置：
+- `APP_VERSION`
+- `LOG_LEVEL`
+- `RATE_LIMIT_PER_MINUTE`
+
 ## RAG 后端切换
 - 默认后端：`simple`（内存检索）
 - 可选后端：`chroma`（向量检索）

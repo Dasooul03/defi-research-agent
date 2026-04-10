@@ -1,7 +1,10 @@
 app:
   name: DeFi Research Agent
-  version: 0.1.0
+  version: 0.2.0
   env: dev
+  log_level: INFO
+api:
+  rate_limit_per_minute: 120
 llm:
   model: gpt-4o-mini
   temperature: 0.2

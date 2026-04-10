@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
 from src.agents.orchestrator import AgentOrchestrator
@@ -15,11 +15,8 @@ orchestrator = AgentOrchestrator()
 
 @router.post("/chat", response_model=APIResponse)
 def chat(payload: ChatRequest) -> APIResponse:
-    try:
-        result = orchestrator.run_chat(payload.query)
-        return APIResponse(success=True, data=result)
-    except Exception as exc:  # pragma: no cover
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    result = orchestrator.run_chat(payload.query)
+    return APIResponse(success=True, data=result)
 
 
 @router.post("/chat/stream")

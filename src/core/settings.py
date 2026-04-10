@@ -15,9 +15,12 @@ CONFIG_PATH = ROOT_DIR / "config" / "default.yaml"
 
 class Settings(BaseSettings):
     app_env: str = Field(default="dev", alias="APP_ENV")
+    app_version: str = Field(default="0.2.0", alias="APP_VERSION")
+    log_level: str = Field(default="INFO", alias="LOG_LEVEL")
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
     model_name: str = Field(default="gpt-4o-mini", alias="MODEL_NAME")
     api_timeout_seconds: int = Field(default=30, alias="API_TIMEOUT_SECONDS")
+    rate_limit_per_minute: int = Field(default=120, alias="RATE_LIMIT_PER_MINUTE")
     use_mock_data: bool = Field(default=True, alias="USE_MOCK_DATA")
     coingecko_base_url: str = Field(default="https://api.coingecko.com/api/v3", alias="COINGECKO_BASE_URL")
     defillama_base_url: str = Field(default="https://api.llama.fi", alias="DEFILLAMA_BASE_URL")
@@ -41,7 +44,15 @@ def get_settings() -> Settings:
 @lru_cache(maxsize=1)
 def get_yaml_config() -> dict[str, Any]:
     fallback = {
-        "app": {"name": "DeFi Research Agent", "version": "0.1.0", "env": "dev"},
+        "app": {
+            "name": "DeFi Research Agent",
+            "version": "0.2.0",
+            "env": "dev",
+            "log_level": "INFO",
+        },
+        "api": {
+            "rate_limit_per_minute": 120,
+        },
         "llm": {"model": "gpt-4o-mini", "temperature": 0.2},
         "rag": {
             "top_k": 3,

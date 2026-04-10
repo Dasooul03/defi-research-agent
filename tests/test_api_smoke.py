@@ -7,14 +7,25 @@ import src.web.routes.chat as chat_route
 import src.web.routes.report as report_route
 from src.main import app
 
-client = TestClient(app)
+client = TestClient(app, raise_server_exceptions=False)
 
 
 def test_health_happy_path() -> None:
     response = client.get("/health")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert payload["service"] == "defi-research-agent"
+    assert "uptime_seconds" in payload
+
+
+def test_observability_headers_exist() -> None:
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    assert "X-Request-Id" in response.headers
+    assert "X-Process-Time-Ms" in response.headers
 
 
 def test_health_error_path_method_not_allowed() -> None:
@@ -52,7 +63,10 @@ def test_chat_error_path_internal_error(monkeypatch) -> None:
     response = client.post("/chat", json={"query": "hello"})
 
     assert response.status_code == 500
-    assert response.json() == {"detail": "chat-boom"}
+    payload = response.json()
+    assert payload["success"] is False
+    assert payload["error"] == "INTERNAL_ERROR"
+    assert payload["message"] == "chat-boom"
 
 
 def test_analyze_happy_path() -> None:
@@ -78,7 +92,10 @@ def test_analyze_error_path_internal_error(monkeypatch) -> None:
     response = client.post("/analyze", json={"query": "analyze"})
 
     assert response.status_code == 500
-    assert response.json() == {"detail": "analyze-boom"}
+    payload = response.json()
+    assert payload["success"] is False
+    assert payload["error"] == "INTERNAL_ERROR"
+    assert payload["message"] == "analyze-boom"
 
 
 def test_report_happy_path() -> None:
@@ -104,7 +121,10 @@ def test_report_error_path_internal_error(monkeypatch) -> None:
     response = client.post("/report", json={"query": "report"})
 
     assert response.status_code == 500
-    assert response.json() == {"detail": "report-boom"}
+    payload = response.json()
+    assert payload["success"] is False
+    assert payload["error"] == "INTERNAL_ERROR"
+    assert payload["message"] == "report-boom"
 
 
 def test_payload_validation_error_for_empty_query() -> None:
@@ -113,3 +133,6 @@ def test_payload_validation_error_for_empty_query() -> None:
     for endpoint in endpoints:
         response = client.post(endpoint, json={"query": ""})
         assert response.status_code == 422
+        payload = response.json()
+        assert payload["success"] is False
+        assert payload["error"] == "VALIDATION_ERROR"

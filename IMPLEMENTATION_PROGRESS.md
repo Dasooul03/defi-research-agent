@@ -10,6 +10,9 @@
 - Function-calling style tool execution metadata is integrated into `/chat`.
 - SSE streaming endpoint `/chat/stream` is implemented.
 - Next.js frontend app is added under `frontend/`.
+- Request observability middleware adds request ID and latency headers.
+- Unified API error payload and per-IP rate limit middleware are implemented.
+- Health check now reports version, environment, uptime, and dependency config state.
 
 ## Implemented APIs
 - GET /health
