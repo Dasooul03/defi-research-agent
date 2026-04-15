@@ -1,55 +1,103 @@
 # DeFi Research Agent
 
-AI-driven DeFi 投研分析系统
+AI-driven DeFi research system with multi-agent orchestration, streaming responses, and report generation.
 
-## 当前实现能力
-- FastAPI 服务 + 多 Agent 编排（Data/Research/Report）
-- 真实链上数据接入（CoinGecko/DefiLlama）与自动回退 mock
-- RAG 后端切换：`simple` / `chroma`
-- Function-calling 风格工具调用结果（`/chat` 响应包含 `tool_calling`）
-- SSE 流式输出接口：`/chat/stream`
-- Next.js 前端（流式聊天页 + 报告页）
+## Table of Contents
+- [Overview](#overview)
+- [Core Capabilities](#core-capabilities)
+- [Agent Architecture](#agent-architecture)
+- [Data Flow](#data-flow)
+- [Project Structure](#project-structure)
+- [Quick Start](#quick-start)
+- [API Reference](#api-reference)
+- [Configuration](#configuration)
+- [Engineering Notes](#engineering-notes)
+- [Roadmap](#roadmap)
+- [License](#license)
 
-## 快速启动
+## Overview
+DeFi Research Agent is an end-to-end MVP for DeFi analysis workflows. It combines:
+- a FastAPI backend,
+- a multi-agent pipeline (Data, Research, Report),
+- tool-calling style responses,
+- SSE streaming for chat,
+- and a Next.js frontend for interactive analysis.
 
-### 1) Conda 环境
-```bash
-conda env create -f environment.yml
-conda activate defi-research-agent
+The project is designed for rapid iteration: real data first, mock fallback always available, and clear API contracts for integration.
+
+## Core Capabilities
+- Multi-agent orchestration for routing between data query, analysis, and report generation.
+- Live DeFi data integration with automatic fallback:
+  - token prices via CoinGecko,
+  - protocol TVL via DefiLlama,
+  - fallback to deterministic mock values on upstream failure.
+- RAG backend switch (`simple` / `chroma`) with graceful fallback to `simple` when `chromadb` is unavailable.
+- Function-calling style tool trace in `/chat` responses.
+- Streaming output via `/chat/stream` (SSE).
+- Frontend pages:
+  - streaming chat console,
+  - report generation dashboard.
+
+## Agent Architecture
+
+```text
+User Query
+   |
+   v
+AgentOrchestrator (routing)
+   |-------------------------------|
+   |                               |
+   v                               v
+DataAgent                      ResearchAgent
+   |                               |
+   v                               v
+DeFiTools (price/TVL/risk)     RAG (simple/chroma)
+   |                               |
+   |----------- merge -------------|
+               |
+               v
+           ReportAgent
+               |
+               v
+     API Response / SSE Stream
 ```
 
-### 2) 配置环境变量
-```bash
-copy .env.example .env
+### Agent Roles
+- `AgentOrchestrator`: task routing and execution path selection (`data`, `research`, `report`).
+- `DataAgent`: structured metric retrieval (symbol extraction, protocol extraction, price/TVL calls).
+- `ResearchAgent`: context retrieval + risk analysis + structured insights.
+- `ReportAgent`: consolidates data/research outputs into report schema.
+- `ToolCallingEngine`: function-calling style tool trace and deterministic summary composition.
+
+### Reliability Improvements (Latest)
+- Added backend CORS policy for local frontend origins.
+- Added frontend request error boundaries to prevent unhandled runtime crashes.
+- Fixed SSE chunk duplication caused by mutable state update path.
+- Improved data-route answer formatting to prevent field binding ambiguity.
+
+## Data Flow
+
+```text
+Frontend (Next.js)
+   |
+   | POST /chat or /chat/stream
+   v
+FastAPI Route Layer
+   |
+   v
+AgentOrchestrator
+   |
+   +--> DataAgent --> DeFiTools --> tool_calling summary
+   |
+   +--> ResearchAgent --> RAG + risk
+   |
+   +--> ReportAgent (when report path)
+   |
+   v
+JSON response or SSE chunks
 ```
 
-### 3) 启动服务
-```bash
-uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### 4) 访问文档
-- Swagger: http://localhost:8000/docs
-
-### 5) 运行 API 冒烟测试
-```bash
-pytest -q
-```
-
-### 6) 启动前端（Next.js）
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-默认前端访问：
-- http://localhost:3000
-
-如需修改后端地址，可设置环境变量：
-- `NEXT_PUBLIC_API_BASE=http://localhost:8000`
-
-## 项目结构
+## Project Structure
 
 ```text
 defi-research-agent/
@@ -61,72 +109,152 @@ defi-research-agent/
       report/page.tsx
   src/
     main.py
-    core/
-      settings.py
-      rag.py
-      tool_calling.py
     agents/
       data_agent.py
       research_agent.py
       report_agent.py
       orchestrator.py
+    core/
+      settings.py
+      rag.py
+      tool_calling.py
     tools/
       defi_tools.py
     web/
+      app.py
+      middleware.py
       schemas.py
       routes/
+        health.py
         chat.py
         analyze.py
         report.py
-        health.py
+  tests/
+    test_api_smoke.py
+    test_defi_tools.py
+    test_rag_backends.py
 ```
 
-## API 一览
+## Quick Start
+
+### 1) Environment (Conda)
+```bash
+conda env create -f environment.yml
+conda activate defi-research-agent
+```
+
+### 2) Configure env vars
+```bash
+copy .env.example .env
+```
+
+### 3) Run backend
+```bash
+uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Backend docs:
+- Swagger: http://localhost:8000/docs
+
+### 4) Run tests
+```bash
+pytest -q
+```
+
+### 5) Run frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend:
+- http://localhost:3000
+
+If backend endpoint differs, set:
+```bash
+set NEXT_PUBLIC_API_BASE=http://localhost:8000
+```
+
+## API Reference
+
+### Health
 - `GET /health`
+
+### Chat
 - `POST /chat`
-- `POST /chat/stream`（SSE）
+  - request:
+    ```json
+    { "query": "ETH price and Uniswap TVL" }
+    ```
+  - response includes:
+    - `route`
+    - `result`
+    - optional `tool_calling`
+    - `answer`
+
+### Streaming Chat (SSE)
+- `POST /chat/stream`
+  - request:
+    ```json
+    { "query": "summarize ETH DeFi trends" }
+    ```
+  - stream events:
+    - `{"type":"chunk","content":"..."}`
+    - `{"type":"done"}`
+
+### Analyze
 - `POST /analyze`
+  - request:
+    ```json
+    { "query": "30d snapshot", "protocol": "Aave" }
+    ```
+
+### Report
 - `POST /report`
+  - request:
+    ```json
+    { "query": "generate investment brief", "protocol": "Aave" }
+    ```
 
-## 更真实的工程细节
-- 请求可观测性：自动注入 `X-Request-Id`、`X-Process-Time-Ms`
-- 统一错误响应：`VALIDATION_ERROR` / `INTERNAL_ERROR`
-- 基础限流：按客户端 IP 的每分钟请求上限
-- 健康检查增强：返回版本、环境、运行时长、依赖配置状态
+## Configuration
 
-可通过 `.env` 配置：
+### App-level env
 - `APP_VERSION`
 - `LOG_LEVEL`
 - `RATE_LIMIT_PER_MINUTE`
 
-## RAG 后端切换
-- 默认后端：`simple`（内存检索）
-- 可选后端：`chroma`（向量检索）
+### Frontend env
+- `NEXT_PUBLIC_API_BASE`
 
-当前代码已支持后端切换与自动回退：当配置为 `chroma` 且本地未安装 `chromadb` 时，会自动回退到 `simple`。
+### RAG backend
+- `config/default.yaml` -> `rag.backend`
+  - `simple` (default)
+  - `chroma`
 
-如需启用 Chroma：
+Install chroma backend dependency when needed:
 ```bash
 pip install chromadb
 ```
 
-可在 `config/default.yaml` 的 `rag.backend` 中设置 `simple` 或 `chroma`。
+### Data source policy
+- `tools.use_mock_data: true`: force mock mode.
+- `tools.use_mock_data: false`: use live APIs first; fallback to mock on failure.
 
-## 真实数据源开关
-- `tools.use_mock_data: true`：始终使用 mock
-- `tools.use_mock_data: false`：优先调用 CoinGecko/DefiLlama，失败自动回退 mock
+## Engineering Notes
+- Request observability headers:
+  - `X-Request-Id`
+  - `X-Process-Time-Ms`
+- Unified error format:
+  - `VALIDATION_ERROR`
+  - `INTERNAL_ERROR`
+- Basic in-memory rate limiting per client IP.
+- CORS enabled for local frontend development origins.
 
-## CI 与 Release
-- CI 工作流：`.github/workflows/ci.yml`
-  - 触发：push / pull_request 到 `main`
-  - 内容：后端 `pytest -q` + 前端 `npm run build`
-
-- Release 工作流：`.github/workflows/release.yml`
-  - 触发：GitHub Actions 手动 `workflow_dispatch`
-  - 输入：版本号（如 `v0.2.0`）
-  - 内容：执行后端测试、前端构建、创建并推送 tag、生成 GitHub Release
-
-- 版本说明：`CHANGELOG.md`
+## Roadmap
+- Redis caching layer and deployment baseline.
+- CI gate hardening for backend tests + frontend build + stream smoke checks.
+- SSE/output regression tests for duplication and field binding correctness.
 
 ## License
 This project is licensed under the MIT License. See `LICENSE` for details.
