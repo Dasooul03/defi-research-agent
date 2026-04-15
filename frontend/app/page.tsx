@@ -18,48 +18,62 @@ export default function HomePage() {
     setMessages((prev) => [...prev, { role: "user", text: query }, { role: "assistant", text: "" }]);
     setStreaming(true);
 
-    const resp = await fetch(`${API_BASE}/chat/stream`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query }),
-    });
+    try {
+      const resp = await fetch(`${API_BASE}/chat/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+      });
 
-    if (!resp.body) {
-      setStreaming(false);
-      return;
-    }
+      if (!resp.ok) {
+        throw new Error(`请求失败: ${resp.status}`);
+      }
 
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder("utf-8");
-    let buffer = "";
+      if (!resp.body) {
+        throw new Error("服务未返回流式数据");
+      }
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n\n");
-      buffer = lines.pop() || "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      for (const line of lines) {
-        const dataLine = line.split("\n").find((l) => l.startsWith("data: "));
-        if (!dataLine) continue;
-        const payload = JSON.parse(dataLine.slice(6));
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || "";
 
-        if (payload.type === "chunk") {
-          setMessages((prev) => {
-            const copy = [...prev];
-            const last = copy[copy.length - 1];
-            if (last && last.role === "assistant") {
-              last.text += payload.content;
-            }
-            return copy;
-          });
+        for (const line of lines) {
+          const dataLine = line.split("\n").find((l) => l.startsWith("data: "));
+          if (!dataLine) continue;
+          const payload = JSON.parse(dataLine.slice(6));
+
+          if (payload.type === "chunk") {
+            setMessages((prev) =>
+              prev.map((m, i) =>
+                i === prev.length - 1 && m.role === "assistant"
+                  ? { ...m, text: m.text + payload.content }
+                  : m
+              )
+            );
+          }
         }
       }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "网络异常，请检查后端服务和 API 地址";
+      setMessages((prev) => {
+        const copy = [...prev];
+        const last = copy[copy.length - 1];
+        if (last && last.role === "assistant" && !last.text) {
+          last.text = `请求失败：${message}`;
+        }
+        return copy;
+      });
+    } finally {
+      setStreaming(false);
     }
-
-    setStreaming(false);
   }
 
   return (

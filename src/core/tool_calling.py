@@ -22,9 +22,11 @@ class ToolCallingEngine:
             {"tool": "get_protocol_tvl", "args": {"protocol": protocol}, "output": tvl}
         )
 
+        price_usd = price.get("price_usd")
+        tvl_usd = tvl.get("tvl_usd")
         summary = (
-            f"基于工具调用结果：{symbol.upper()} 现价约 ${price.get('price_usd')}，"
-            f"{protocol} TVL 约 ${tvl.get('tvl_usd')}。"
+            f"{symbol.upper()} 现价约 ${price_usd}。"
+            f"{protocol.title()} TVL 约 ${tvl_usd}。"
         )
 
         return {

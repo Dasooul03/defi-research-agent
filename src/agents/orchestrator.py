@@ -63,8 +63,9 @@ class AgentOrchestrator:
     def stream_chat(self, query: str) -> Iterator[str]:
         result = self.run_chat(query)
         text = str(result.get("answer") or "分析完成。")
-        for token in text.split():
-            yield token + " "
+        chunk_size = 12
+        for i in range(0, len(text), chunk_size):
+            yield text[i : i + chunk_size]
 
     def run_analysis(self, query: str, protocol: str | None = None) -> dict[str, Any]:
         data_result = self.data_agent.run(query, protocol=protocol)
