@@ -4,6 +4,7 @@ import logging
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.requests import Request
 
@@ -24,6 +25,17 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=str(config.get("app", {}).get("name", "DeFi Research Agent")),
         version=str(config.get("app", {}).get("version", settings.app_version)),
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     app.state.settings = settings
