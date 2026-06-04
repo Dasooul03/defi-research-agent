@@ -1,0 +1,27 @@
+services:
+  # Backend API
+  - type: web
+    name: defi-api
+    env: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://defi-frontend.onrender.com
+      - key: APP_ENV
+        value: production
+      - key: USE_MOCK_DATA
+        value: false
+    healthCheckPath: /health
+
+  # Frontend
+  - type: web
+    name: defi-frontend
+    env: node
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NEXT_PUBLIC_API_BASE
+        value: https://defi-api.onrender.com
