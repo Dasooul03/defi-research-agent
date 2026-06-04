@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+
+# Frontend (not needed in backend image)
+frontend/
+
+# Tests
+tests/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI / workflows
+.github/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+
+# Docs / Plans
+*.md
+!README.md
+
+# Project-specific
+.codegraph/
+plan.md
+IMPLEMENTATION_PROGRESS.md
+CHANGELOG.md
