@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 
 type ChatMessage = { role: "user" | "assistant"; text: string };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 
 export default function HomePage() {
   const [query, setQuery] = useState("请给我 ETH 和 Uniswap 的快照分析");

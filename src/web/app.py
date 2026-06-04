@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.requests import Request
 
 from src.core.settings import get_settings, get_yaml_config
@@ -73,5 +75,10 @@ def create_app() -> FastAPI:
     app.include_router(chat_router)
     app.include_router(analyze_router)
     app.include_router(report_router)
+
+    # Mount frontend static files (built by Next.js export)
+    static_dir = Path(__file__).resolve().parent.parent.parent / "static"
+    if static_dir.is_dir():
+        app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="static")
 
     return app
